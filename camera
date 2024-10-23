@@ -1,0 +1,139 @@
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(
+    MaterialApp(
+      home: CaptureFaceScreen(),
+      debugShowCheckedModeBanner: false, // Remove debug banner
+    ),
+  );
+}
+
+class CaptureFaceScreen extends StatefulWidget {
+  @override
+  _CaptureFaceScreenState createState() => _CaptureFaceScreenState();
+}
+
+class _CaptureFaceScreenState extends State<CaptureFaceScreen> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black, // Entire screen background color black
+      body: Column(
+        children: [
+          // Custom back button, Step 1/1, and Capture Face text in a row
+          Padding(
+            padding: const EdgeInsets.only(top: 40.0, left: 16.0, right: 16.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start, // Align to the start (left)
+              children: [
+                // "Back" button text
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pop(context);
+                  },
+                  child: Text(
+                    'Back',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                SizedBox(width: 20), // Add space between Back button and texts
+                // Step 1/1 and Capture Face on the left side
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start, // Align text to the left
+                  children: [
+                    // Step 1/1 text
+                    Text(
+                      'Step 1/1',
+                      style: TextStyle(color: Colors.white, fontSize: 18),
+                    ),
+                    SizedBox(height: 10),
+                    // Capture Face text with a line below it
+                    Text(
+                      'Capture Face',
+                      style: TextStyle(color: Colors.white, fontSize: 24),
+                    ),
+                    SizedBox(height: 10),
+                    // Thick line below Capture Face text
+                    Container(
+                      width: 150, // Adjust width as per your requirement
+                      height: 4,
+                      color: Colors.white,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: 20),
+          Expanded(
+            child: Stack(
+              children: [
+                // Simulate landscape camera feed (aspect ratio 16:9)
+                Center(
+                  child: Container(
+                    width: MediaQuery.of(context).size.width * 0.9,
+                    height: MediaQuery.of(context).size.width * 0.5, // 16:9 aspect ratio
+                    color: Colors.grey[800], // Camera area color (gray)
+                    child: Center(
+                      child: Icon(
+                        Icons.camera_alt,
+                        size: 100,
+                        color: Colors.grey[500],
+                      ),
+                    ),
+                  ),
+                ),
+                // Frame in center for face capture with thicker border
+                Center(
+                  child: Container(
+                    width: MediaQuery.of(context).size.width * 0.45,
+                    height: MediaQuery.of(context).size.width * 0.6,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.white, width: 6), // Thicker border
+                    ),
+                    child: Icon(Icons.face, size: 50, color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.lightbulb_outline, color: Colors.white), // Bulb Icon
+                SizedBox(width: 10),
+                Text(
+                  'Take a clear picture with good quality',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 20.0),
+            child: ElevatedButton(
+              onPressed: () {
+                // Simulate picture capture
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Picture captured! (Simulated)')),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue, // Button color
+                padding: EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+              ),
+              child: Text('Take Picture'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
