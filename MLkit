@@ -1,0 +1,176 @@
+import 'package:flutter/material.dart';
+import 'package:camera/camera.dart';
+import 'package:google_ml_kit/google_ml_kit.dart';
+import 'dart:io';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final cameras = await availableCameras();
+  final firstCamera = cameras.first;
+
+  runApp(
+    MaterialApp(
+      home: CaptureAadhaarScreen(camera: firstCamera),
+      debugShowCheckedModeBanner: false,
+    ),
+  );
+}
+
+class CaptureAadhaarScreen extends StatefulWidget {
+  final CameraDescription camera;
+
+  CaptureAadhaarScreen({required this.camera});
+
+  @override
+  _CaptureAadhaarScreenState createState() => _CaptureAadhaarScreenState();
+}
+
+class _CaptureAadhaarScreenState extends State<CaptureAadhaarScreen> {
+  late CameraController _controller;
+  late Future<void> _initializeControllerFuture;
+
+  // Variables to hold Aadhaar details
+  String? _name;
+  String? _dob;
+  String? _aadhaarNumber;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = CameraController(
+      widget.camera,
+      ResolutionPreset.medium,
+    );
+
+    _initializeControllerFuture = _controller.initialize().catchError((e) {
+      print("Camera initialization error: $e");  // Handle initialization errors
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _captureAndProcessImage() async {
+    try {
+      print("Capture process started");
+      await _initializeControllerFuture;  // Ensure the camera is initialized
+      final image = await _controller.takePicture();
+      print("Image captured: ${image.path}");
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Picture saved to ${image.path}')),
+      );
+
+      // Process the image to extract text
+      await _extractTextFromImage(image.path);
+    } catch (e) {
+      print("Error in capture and process image: $e");
+    }
+  }
+
+  Future<void> _extractTextFromImage(String imagePath) async {
+    final inputImage = InputImage.fromFilePath(imagePath);
+    final textDetector = GoogleMlKit.vision.textRecognizer();
+
+    final RecognizedText recognizedText = await textDetector.processImage(inputImage);
+
+    String? name, dob, aadhaarNumber;
+
+    // Parse through recognized text to extract Aadhaar details
+    for (TextBlock block in recognizedText.blocks) {
+      for (TextLine line in block.lines) {
+        final text = line.text;
+
+        if (RegExp(r'^[0-9]{4}\s[0-9]{4}\s[0-9]{4}$').hasMatch(text)) {
+          aadhaarNumber = text;
+        } else if (text.contains(RegExp(r'DOB|DoB|dob', caseSensitive: false))) {
+          dob = text;
+        } else {
+          name ??= text;
+        }
+      }
+    }
+
+    // Update state to display extracted details on the screen
+    setState(() {
+      _name = name;
+      _dob = dob;
+      _aadhaarNumber = aadhaarNumber;
+    });
+
+    await textDetector.close();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Column(
+        children: [
+          // Camera Preview
+          Expanded(
+            child: FutureBuilder<void>(
+              future: _initializeControllerFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.done) {
+                  return Center(
+                    child: AspectRatio(
+                      aspectRatio: _controller.value.aspectRatio,
+                      child: CameraPreview(_controller),
+                    ),
+                  );
+                } else {
+                  return Center(child: CircularProgressIndicator());
+                }
+              },
+            ),
+          ),
+
+          // Display Aadhaar details
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                Text(
+                  'Name: ${_name ?? "Not Found"}',
+                  style: TextStyle(color: Colors.white, fontSize: 18),
+                ),
+                Text(
+                  'DOB: ${_dob ?? "Not Found"}',
+                  style: TextStyle(color: Colors.white, fontSize: 18),
+                ),
+                Text(
+                  'Aadhaar Number: ${_aadhaarNumber ?? "Not Found"}',
+                  style: TextStyle(color: Colors.white, fontSize: 18),
+                ),
+              ],
+            ),
+          ),
+
+          // Capture Button
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: ElevatedButton(
+              onPressed: () async {
+                try {
+                  await _initializeControllerFuture;
+                  await _captureAndProcessImage();
+                } catch (e) {
+                  print("Button error: $e");
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                padding: EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+              ),
+              child: Text('Capture Aadhaar'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
